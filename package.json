@@ -1,0 +1,20 @@
+{
+  "name": "treszek.github.io",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Devlog & notes — treszek",
+  "scripts": {
+    "dev": "eleventy --serve",
+    "build": "eleventy",
+    "convert": "node tools/convert.js"
+  },
+  "devDependencies": {
+    "@11ty/eleventy": "^3.1.6",
+    "@11ty/eleventy-plugin-syntaxhighlight": "^5.0.2",
+    "markdown-it-attrs": "^5.0.1"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.126.0"
+  }
+}
