@@ -1,0 +1,20 @@
+---
+layout: layouts/base.njk
+---
+{%- for post in collections.post | latest(1000) %}
+<article class="feed-item">
+  <header class="feed-header">
+    <p class="post-meta">
+      <a class="post-board" href="/{{ post.data.board }}/">{{ post.data.board }}</a>
+      {%- if post.data.project %}<span class="post-project">{{ post.data.project }}</span>{% endif %}
+      <time datetime="{{ post.date | utcDate }}">{{ post.date | utcDateTime }}</time>
+    </p>
+    <h2 class="feed-title"><a href="{{ post.url }}">{{ post.data.title }}</a></h2>
+  </header>
+  <div class="post-body">
+    {{ post.templateContent | safe }}
+  </div>
+</article>
+{%- else %}
+<p class="empty">No posts yet.</p>
+{%- endfor %}

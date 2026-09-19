@@ -1,0 +1,10 @@
+# dependencies / build output
+node_modules/
+_site/
+
+# local-only workspace
+originals/
+tools/
+
+# secrets
+.env

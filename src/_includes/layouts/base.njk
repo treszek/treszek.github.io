@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>{% if title %}{{ title }} · {% endif %}{{ site.title }}</title>
+  <meta name="description" content="{{ description or site.description }}">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+  <link rel="stylesheet" href="/assets/css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap">
+      <a class="site-name" href="/">{{ site.title }}</a>
+    </div>
+  </header>
+
+  <div class="recent-bar">
+    <div class="wrap">
+      <button id="recent-toggle" aria-expanded="false" aria-controls="recent-panel">Recent Log<span class="chev" aria-hidden="true">▾</span></button>
+      <div id="recent-panel" hidden>
+        <ul class="recent-list">
+          {%- for post in collections.post | latest(100) %}
+          <li>
+            <time datetime="{{ post.date | utcDate }}">{{ post.date | utcDate }}</time>
+            <a href="{{ post.url }}">{{ post.data.title }}</a>
+            <span class="recent-board">{{ post.data.board }}</span>
+          </li>
+          {%- endfor %}
+        </ul>
+        <div class="recent-pager">
+          <button class="pg-prev" type="button">Prev</button>
+          <span class="pg-info"></span>
+          <button class="pg-next" type="button">Next</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="wrap layout">
+    <aside class="sidebar">
+      <section class="profile-card">
+        <img src="{{ site.author.image }}" alt="{{ site.author.name }}" width="160" height="160">
+        <p class="profile-tagline">{{ site.author.tagline }}</p>
+        <a class="profile-github" href="{{ site.author.github }}">GitHub ↗</a>
+      </section>
+
+      <nav class="board-nav">
+        <a class="nav-root" href="/"{% if page.url == "/" %} aria-current="page"{% endif %}>{{ site.project }}</a>
+        {%- for b in boards %}
+        <a class="nav-sub" href="/{{ b.slug }}/"{% if board == b.slug %} aria-current="page"{% endif %}>{{ b.slug }}</a>
+        {%- endfor %}
+      </nav>
+    </aside>
+
+    <main class="content">
+      {{ content | safe }}
+    </main>
+
+    <aside class="grass-rail">
+      <section class="rail-sec">
+        <p class="grass-meta"><strong>GitHub</strong><span>since {{ site.author.githubSince }}</span></p>
+        <div id="gh-grass" class="grass" data-user="{{ site.author.githubUser }}" data-since="{{ site.author.githubSince }}"><span class="grass-note">Loading…</span></div>
+      </section>
+      <section class="rail-sec">
+        {% grass collections.post %}
+      </section>
+    </aside>
+  </div>
+
+  <script>
+  (function () {
+    /* ---- recent log: toggle + pagination + swipe ---- */
+    var toggle = document.getElementById("recent-toggle");
+    var panel = document.getElementById("recent-panel");
+    if (toggle && panel) {
+      toggle.addEventListener("click", function () {
+        var opening = panel.hasAttribute("hidden");
+        if (opening) panel.removeAttribute("hidden");
+        else panel.setAttribute("hidden", "");
+        toggle.setAttribute("aria-expanded", opening);
+        toggle.classList.toggle("open", opening);
+      });
+
+      var items = Array.prototype.slice.call(panel.querySelectorAll(".recent-list li"));
+      var PER = 5;
+      var pages = Math.max(1, Math.ceil(items.length / PER));
+      var page = 0;
+      var info = panel.querySelector(".pg-info");
+      var prev = panel.querySelector(".pg-prev");
+      var next = panel.querySelector(".pg-next");
+
+      var render = function () {
+        items.forEach(function (li, i) {
+          li.style.display = i >= page * PER && i < (page + 1) * PER ? "" : "none";
+        });
+        info.textContent = (page + 1) + " / " + pages;
+        prev.disabled = page === 0;
+        next.disabled = page === pages - 1;
+      };
+      prev.addEventListener("click", function () { if (page > 0) { page--; render(); } });
+      next.addEventListener("click", function () { if (page < pages - 1) { page++; render(); } });
+
+      var x0 = null;
+      panel.addEventListener("touchstart", function (e) { x0 = e.touches[0].clientX; }, { passive: true });
+      panel.addEventListener("touchend", function (e) {
+        if (x0 === null) return;
+        var dx = e.changedTouches[0].clientX - x0;
+        x0 = null;
+        if (Math.abs(dx) < 40) return;
+        if (dx < 0 && page < pages - 1) { page++; render(); }
+        else if (dx > 0 && page > 0) { page--; render(); }
+      }, { passive: true });
+
+      render();
+    }
+
+    /* ---- feed pagination: << < 0 1 2 ... > >> (zero-based) ---- */
+    var feedMain = document.querySelector("main.content");
+    var feedItems = feedMain ? Array.prototype.slice.call(feedMain.querySelectorAll(".feed-item")) : [];
+    if (feedItems.length) {
+      var FPER = 5;
+      var fpages = Math.ceil(feedItems.length / FPER);
+      var fpage = 0;
+      var pager = document.createElement("nav");
+      pager.className = "feed-pager";
+      pager.setAttribute("aria-label", "Pages");
+      feedMain.appendChild(pager);
+
+      var go = function (p, scroll) {
+        fpage = Math.max(0, Math.min(p, fpages - 1));
+        feedItems.forEach(function (el, i) {
+          el.style.display = i >= fpage * FPER && i < (fpage + 1) * FPER ? "" : "none";
+        });
+        var BLOCK = 10;
+        var startN = Math.floor(fpage / BLOCK) * BLOCK;
+        var endN = Math.min(startN + BLOCK, fpages);
+        var html = "";
+        html += '<button type="button" data-p="0"' + (fpage === 0 ? " disabled" : "") + ">&laquo;</button>";
+        html += '<button type="button" data-p="' + (fpage - 1) + '"' + (fpage === 0 ? " disabled" : "") + ">&lsaquo;</button>";
+        for (var n = startN; n < endN; n++) {
+          html += '<button type="button" data-p="' + n + '"' + (n === fpage ? ' aria-current="page"' : "") + ">" + n + "</button>";
+        }
+        html += '<button type="button" data-p="' + (fpage + 1) + '"' + (fpage === fpages - 1 ? " disabled" : "") + ">&rsaquo;</button>";
+        html += '<button type="button" data-p="' + (fpages - 1) + '"' + (fpage === fpages - 1 ? " disabled" : "") + ">&raquo;</button>";
+        pager.innerHTML = html;
+        if (scroll) window.scrollTo({ top: 0 });
+      };
+      pager.addEventListener("click", function (e) {
+        var b = e.target.closest("button[data-p]");
+        if (b && !b.disabled) go(parseInt(b.dataset.p, 10), true);
+      });
+      go(0, false);
+    }
+
+    /* ---- real GitHub contribution grass (top of the rail) ----
+     * Window: from account creation date, capped to the last 3 months.
+     * Oldest at top, today as the last cell — the blog grass below
+     * continues the timeline (today -> end of year).
+     */
+    var gh = document.getElementById("gh-grass");
+    if (gh) {
+      var DAY = 86400000;
+      var M = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
+      var user = gh.dataset.user;
+      var created = Date.parse(gh.dataset.since + "T00:00:00Z");
+      var now = new Date();
+      var today = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+      var start = Math.max(created, Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 3, now.getUTCDate()));
+
+      var years = [];
+      for (var y = new Date(start).getUTCFullYear(); y <= now.getUTCFullYear(); y++) years.push(y);
+
+      Promise.all(years.map(function (y) {
+        return fetch("https://github-contributions-api.jogruber.de/v4/" + user + "?y=" + y)
+          .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); });
+      })).then(function (res) {
+        var levels = {};
+        res.forEach(function (d) {
+          (d.contributions || []).forEach(function (c) { levels[c.date] = { level: c.level, count: c.count }; });
+        });
+        var cell = 11, gap = 3, step = cell + gap, cols = 7, left = 28, top = 2;
+        var days = Math.round((today - start) / DAY) + 1;
+        var rows = Math.ceil(days / cols);
+        var rects = "", labels = "", labeled = {};
+        for (var i = 0; i < days; i++) {
+          var t = start + i * DAY;
+          var d = new Date(t);
+          var key = d.toISOString().slice(0, 10);
+          var r = Math.floor(i / cols), c = i % cols;
+          var e = levels[key] || { level: 0, count: 0 };
+          rects += '<rect x="' + (left + c * step) + '" y="' + (top + r * step) + '" width="' + cell + '" height="' + cell + '" rx="2" ry="2" class="g' + e.level + (t === today ? " g-today" : "") + '"><title>' + key + ": " + e.count + " contribution" + (e.count === 1 ? "" : "s") + "</title></rect>";
+          if ((i === 0 || d.getUTCDate() === 1) && !labeled[r]) {
+            labels += '<text x="0" y="' + (top + r * step + cell - 2) + '" class="grass-label">' + M[d.getUTCMonth()] + "</text>";
+            labeled[r] = 1;
+          }
+        }
+        var w = left + cols * step, h = top + rows * step;
+        gh.innerHTML = '<svg viewBox="0 0 ' + w + " " + h + '" width="' + w + '" height="' + h + '" xmlns="http://www.w3.org/2000/svg">' + labels + rects + "</svg>";
+      }).catch(function () {
+        gh.innerHTML = '<span class="grass-note">Unavailable</span>';
+      });
+    }
+  })();
+  </script>
+</body>
+</html>

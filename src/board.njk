@@ -1,0 +1,27 @@
+---
+layout: layouts/base.njk
+pagination:
+  data: boards
+  size: 1
+  alias: boardInfo
+permalink: "/{{ boardInfo.slug }}/"
+eleventyComputed:
+  title: "{{ boardInfo.title }}"
+  board: "{{ boardInfo.slug }}"
+---
+{%- for post in collections.post | inBoard(boardInfo.slug) %}
+<article class="feed-item">
+  <header class="feed-header">
+    <p class="post-meta">
+      {%- if post.data.project %}<span class="post-project">{{ post.data.project }}</span>{% endif %}
+      <time datetime="{{ post.date | utcDate }}">{{ post.date | utcDateTime }}</time>
+    </p>
+    <h2 class="feed-title"><a href="{{ post.url }}">{{ post.data.title }}</a></h2>
+  </header>
+  <div class="post-body">
+    {{ post.templateContent | safe }}
+  </div>
+</article>
+{%- else %}
+<p class="empty">No posts yet.</p>
+{%- endfor %}

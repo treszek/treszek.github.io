@@ -1,0 +1,16 @@
+---
+layout: layouts/base.njk
+---
+<article class="post">
+  <header class="post-header">
+    <p class="post-meta">
+      <a class="post-board" href="/{{ board }}/">{{ board }}</a>
+      {%- if project %}<span class="post-project">{{ project }}</span>{% endif %}
+      <time datetime="{{ page.date | utcDate }}">{{ page.date | utcDateTime }}</time>
+    </p>
+    <h1>{{ title }}</h1>
+  </header>
+  <div class="post-body">
+    {{ content | safe }}
+  </div>
+</article>
